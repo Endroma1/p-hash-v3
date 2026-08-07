@@ -1,0 +1,4 @@
+{
+    "name": "data.db",
+    "adapter": "sqlite3"
+}

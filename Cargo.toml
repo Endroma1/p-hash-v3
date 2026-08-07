@@ -1,0 +1,21 @@
+[package]
+name = "phash"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+atomic_enum = "0.3.0"
+fake = "5.1.0"
+futures = { version = "0.3.33", features = ["executor"] }
+image = "0.25.10"
+image_hasher = "3.1.1"
+rayon = "1.12.0"
+reqwest = { version = "0.13.4", features = ["rustls"] }
+serde = { version = "1.0.229", features = ["derive"] }
+sqlx = { version = "0.9.0", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid"] }
+thiserror = "2.0.19"
+tokio = { version = "1.53.1", features = ["full"] }
+tokio-stream = "0.1.19"
+tracing = "0.1.44"
+uuid = { version = "1.24.0", features = ["v4"] }
