@@ -14,8 +14,6 @@ pub async fn run(state: State) -> Result<(), RunError> {
 
     let images_n = { *state.settings.images_n.lock().unwrap() };
 
-    println!("Starting fetcher");
-
     let stream = Fetcher::Picsum { images_n }.execute().await.unwrap();
 
     let modifications = state.settings.modifications.clone().into();
@@ -23,7 +21,6 @@ pub async fn run(state: State) -> Result<(), RunError> {
 
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
 
-    println!("Starting processor");
     spawn_blocking(move || {
         let images = block_on_stream(stream);
         let results = parse_image_rayon(images, &modifications, &hashing_methods);
@@ -44,7 +41,6 @@ pub async fn run(state: State) -> Result<(), RunError> {
 
     let results = Box::pin(results.then(async |p| {
         let _ = &progress.increment_check();
-        println!("{:?}", Progress::from(&progress));
         progress_sender
             .send_fetch_progress(Progress::from(&progress))
             .await;
@@ -52,7 +48,6 @@ pub async fn run(state: State) -> Result<(), RunError> {
         p
     }));
 
-    println!("Sending results to db");
     parse_results(results, &state.db_pool)
         .await
         .context("Could not parse results")?;
