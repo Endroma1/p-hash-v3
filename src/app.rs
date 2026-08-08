@@ -129,6 +129,7 @@ impl App {
     }
 }
 
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct Facts {
     pub number_of_hashes: i64,
     pub number_of_images: i64,
