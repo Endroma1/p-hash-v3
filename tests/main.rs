@@ -1,4 +1,4 @@
-use phash::{HashingMethodType, ModificationType, Settings, StateBuilder, run};
+use phash::{App, HashingMethodType, ModificationType, Settings};
 use sqlx::{AssertSqlSafe, Connection, PgConnection, PgPool, query};
 use uuid::Uuid;
 
@@ -7,16 +7,14 @@ async fn run_creates_correct_amount_of_entries_in_database() {
     let pool = setup_db().await;
 
     let mut settings = Settings::default();
-    settings.set_images_n(10);
+    settings.images_n = 10;
     settings.hashing_methods = vec![HashingMethodType::Mean];
     settings.modifications = vec![ModificationType::Blur];
-    let (state, _event_stream) = StateBuilder::default()
-        .with_settings(settings)
-        .build(pool.clone());
 
-    let expected_number_of_results = state.settings.expected_number_of_results();
+    let expected_number_of_results = settings.expected_number_of_results();
 
-    run(state).await.unwrap();
+    let (app, _stream) = App::new(&pool);
+    app.run(&settings).await.unwrap();
 
     let number_of_results: i64 = query!("SELECT COUNT(id) FROM hashes;")
         .fetch_one(&pool)

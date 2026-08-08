@@ -22,10 +22,30 @@ pub trait Modification: Send + Sync + Display {
 pub struct Modifications {
     methods: Vec<Arc<dyn Modification>>,
 }
-impl From<Vec<ModificationType>> for Modifications{
+impl From<Vec<ModificationType>> for Modifications {
     fn from(value: Vec<ModificationType>) -> Self {
         let mut modifications = Modifications::default();
-        value.iter().for_each(|m| modifications.push_boxed(m.modification()));
+        value
+            .iter()
+            .for_each(|m| modifications.push_boxed(m.modification()));
+        modifications
+    }
+}
+impl From<&[ModificationType]> for Modifications {
+    fn from(value: &[ModificationType]) -> Self {
+        let mut modifications = Self::default();
+        value
+            .iter()
+            .for_each(|m| modifications.push_boxed(m.modification()));
+        modifications
+    }
+}
+impl From<&Vec<ModificationType>> for Modifications {
+    fn from(value: &Vec<ModificationType>) -> Self {
+        let mut modifications = Self::default();
+        value
+            .iter()
+            .for_each(|m| modifications.push_boxed(m.modification()));
         modifications
     }
 }
@@ -55,9 +75,8 @@ impl Modification for Blur {
         blur(image, 0.5).into()
     }
 }
-impl Display for Blur{
+impl Display for Blur {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "blur")
     }
 }
-

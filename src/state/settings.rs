@@ -3,28 +3,23 @@ use sqlx::postgres::PgConnectOptions;
 
 use crate::{HashingMethodType, ModificationType};
 
+#[derive(Debug, Clone)]
 pub struct Settings {
-    images_n: std::sync::Mutex<u64>,
+    pub images_n: u64,
     pub hashing_methods: Vec<HashingMethodType>,
     pub modifications: Vec<ModificationType>,
 }
 impl Settings {
     pub fn expected_number_of_results(&self) -> u64 {
-        *self.images_n.lock().unwrap()
+        self.images_n
             * self.hashing_methods.len() as u64
             * self.modifications.len() as u64
-    }
-    pub fn set_images_n(&self, value: u64) {
-        *self.images_n.lock().unwrap() = value;
-    }
-    pub fn images_n(&self) -> u64 {
-        *self.images_n.lock().unwrap()
     }
 }
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            images_n: std::sync::Mutex::new(100),
+            images_n: 100,
             hashing_methods: vec![HashingMethodType::Mean],
             modifications: vec![ModificationType::Blur],
         }

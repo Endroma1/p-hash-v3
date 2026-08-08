@@ -17,7 +17,7 @@ impl HashingMethodType {
     }
 }
 
-pub trait HashingMethod: Send + Sync + Display{
+pub trait HashingMethod: Send + Sync + Display {
     fn run(&self, image: &DynamicImage) -> Hash;
 }
 
@@ -27,6 +27,24 @@ pub struct HashingMethods {
 }
 impl From<Vec<HashingMethodType>> for HashingMethods {
     fn from(value: Vec<HashingMethodType>) -> Self {
+        let mut hashing_methods = Self::default();
+        value
+            .iter()
+            .for_each(|h| hashing_methods.push_boxed(h.hashing_method()));
+        hashing_methods
+    }
+}
+impl From<&[HashingMethodType]> for HashingMethods {
+    fn from(value: &[HashingMethodType]) -> Self {
+        let mut hashing_methods = Self::default();
+        value
+            .iter()
+            .for_each(|h| hashing_methods.push_boxed(h.hashing_method()));
+        hashing_methods
+    }
+}
+impl From<&Vec<HashingMethodType>> for HashingMethods {
+    fn from(value: &Vec<HashingMethodType>) -> Self {
         let mut hashing_methods = Self::default();
         value
             .iter()
@@ -70,4 +88,3 @@ impl Display for Mean {
         write!(f, "mean")
     }
 }
-
