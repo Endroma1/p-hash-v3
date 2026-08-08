@@ -41,6 +41,11 @@ impl App {
                 "No modifications selected"
             )));
         }
+        if settings.images_n <= 0 {
+            return Err(RunError::UnexpectedError(anyhow::anyhow!(
+                "Number of images needs to be more than zero"
+            )));
+        }
 
         self.is_running
             .store(true, std::sync::atomic::Ordering::Relaxed);
