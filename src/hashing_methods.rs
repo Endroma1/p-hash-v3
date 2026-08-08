@@ -9,11 +9,15 @@ use crate::processor::Hash;
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, EnumIter)]
 pub enum HashingMethodType {
     Mean,
+    Median,
+    VertGradient,
 }
 impl HashingMethodType {
     pub fn hashing_method(&self) -> Box<dyn HashingMethod> {
         match self {
             Self::Mean => Box::new(Mean),
+            Self::Median => Box::new(Median),
+            Self::VertGradient => Box::new(VertGradient),
         }
     }
 }

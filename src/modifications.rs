@@ -6,11 +6,15 @@ use strum_macros::EnumIter;
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, EnumIter)]
 pub enum ModificationType {
     Blur,
+    Brighten,
+    Contrast,
 }
 impl ModificationType {
     pub fn modification(&self) -> Box<dyn Modification> {
         match self {
             Self::Blur => Box::new(Blur),
+            Self::Brighten => Box::new(Brighten),
+            Self::Contrast => Box::new(Contrast)
         }
     }
 }
