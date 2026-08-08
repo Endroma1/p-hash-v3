@@ -74,6 +74,9 @@ impl<'a> App<'a> {
 
         Ok(())
     }
+    pub fn is_running(&self)->bool{
+        self.is_running.load(std::sync::atomic::Ordering::Relaxed)
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
