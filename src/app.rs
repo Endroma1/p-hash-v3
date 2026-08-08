@@ -7,17 +7,18 @@ use tokio::task::spawn_blocking;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use crate::{
-    AtomicProgress, EventHandler, EventStream, Fetcher, HashingMethods, Modifications, Progress, Settings, create_event_bus, parse_image_rayon, parse_results
+    AtomicProgress, EventHandler, EventStream, Fetcher, HashingMethods, Modifications, Progress,
+    Settings, create_event_bus, parse_image_rayon, parse_results,
 };
 
-pub struct App<'a> {
+pub struct App {
     is_running: AtomicBool,
     event_handler: EventHandler,
-    db_pool: &'a PgPool,
+    db_pool: PgPool,
 }
 
-impl<'a> App<'a> {
-    pub fn new(db_pool: &'a PgPool) -> (Self, EventStream) {
+impl App {
+    pub fn new(db_pool: PgPool) -> (Self, EventStream) {
         let (handler, stream) = create_event_bus();
         let app = Self {
             is_running: AtomicBool::default(),
@@ -38,7 +39,6 @@ impl<'a> App<'a> {
         let stream = Fetcher::Picsum { images_n }.execute().await.unwrap();
         let modifications = Modifications::from(&settings.modifications);
         let hashing_methods = HashingMethods::from(&settings.hashing_methods);
-
 
         let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
 
@@ -74,7 +74,7 @@ impl<'a> App<'a> {
 
         Ok(())
     }
-    pub fn is_running(&self)->bool{
+    pub fn is_running(&self) -> bool {
         self.is_running.load(std::sync::atomic::Ordering::Relaxed)
     }
 }

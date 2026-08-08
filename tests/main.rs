@@ -13,7 +13,7 @@ async fn run_creates_correct_amount_of_entries_in_database() {
 
     let expected_number_of_results = settings.expected_number_of_results();
 
-    let (app, _stream) = App::new(&pool);
+    let (app, _stream) = App::new(pool.clone());
     app.run(&settings).await.unwrap();
 
     let number_of_results: i64 = query!("SELECT COUNT(id) FROM hashes;")
