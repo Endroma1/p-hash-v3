@@ -31,6 +31,17 @@ impl App {
     // Runs modification and hashing
     // Blocks until done. Relieves thread when sending results to db
     pub async fn run(&self, settings: &Settings) -> Result<(), RunError> {
+        if settings.hashing_methods.len() == 0 {
+            return Err(RunError::UnexpectedError(anyhow::anyhow!(
+                "No hashing methods selected"
+            )));
+        }
+        if settings.modifications.len() == 0 {
+            return Err(RunError::UnexpectedError(anyhow::anyhow!(
+                "No modifications selected"
+            )));
+        }
+
         self.is_running
             .store(true, std::sync::atomic::Ordering::Relaxed);
 
@@ -72,7 +83,8 @@ impl App {
             .await
             .context("Could not parse results")?;
 
-        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.is_running
+            .store(false, std::sync::atomic::Ordering::Relaxed);
 
         Ok(())
     }
