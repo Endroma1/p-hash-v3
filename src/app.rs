@@ -2,7 +2,7 @@ use std::sync::atomic::AtomicBool;
 
 use anyhow::Context;
 use futures::{StreamExt, executor::block_on_stream};
-use sqlx::PgPool;
+use sqlx::{PgPool, query};
 use tokio::task::spawn_blocking;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
@@ -30,19 +30,19 @@ impl App {
     }
     // Runs modification and hashing
     // Blocks until done. Relieves thread when sending results to db
-    pub async fn run(&self, settings: &Settings) -> Result<(), RunError> {
+    pub async fn run(&self, settings: &Settings) -> Result<(), AppError> {
         if settings.hashing_methods.len() == 0 {
-            return Err(RunError::UnexpectedError(anyhow::anyhow!(
+            return Err(AppError::UnexpectedError(anyhow::anyhow!(
                 "No hashing methods selected"
             )));
         }
         if settings.modifications.len() == 0 {
-            return Err(RunError::UnexpectedError(anyhow::anyhow!(
+            return Err(AppError::UnexpectedError(anyhow::anyhow!(
                 "No modifications selected"
             )));
         }
         if settings.images_n <= 0 {
-            return Err(RunError::UnexpectedError(anyhow::anyhow!(
+            return Err(AppError::UnexpectedError(anyhow::anyhow!(
                 "Number of images needs to be more than zero"
             )));
         }
@@ -96,10 +96,48 @@ impl App {
     pub fn is_running(&self) -> bool {
         self.is_running.load(std::sync::atomic::Ordering::Relaxed)
     }
+    pub async fn facts(&self) -> Result<Facts, AppError> {
+        let number_of_hashes = query!("SELECT count(id) FROM hashes")
+            .fetch_one(&self.db_pool)
+            .await
+            .context("Could not get number of hashes from db")?
+            .count
+            .unwrap_or_default();
+
+        let number_of_images = query!("SELECT count(id) FROM images")
+            .fetch_one(&self.db_pool)
+            .await
+            .context("Could not get number of images from db")?
+            .count
+            .unwrap_or_default();
+
+        let number_of_modified_images = query!("SELECT count(id) FROM modified_images")
+            .fetch_one(&self.db_pool)
+            .await
+            .context("Could not get number of images from db")?
+            .count
+            .unwrap_or_default();
+
+        let running = self.is_running();
+
+        Ok(Facts {
+            number_of_hashes,
+            number_of_images,
+            number_of_modified_images,
+            running,
+        })
+    }
+}
+
+pub struct Facts {
+    pub number_of_hashes: i64,
+    pub number_of_images: i64,
+    pub number_of_modified_images: i64,
+    pub running: bool,
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum RunError {
+pub enum AppError {
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
