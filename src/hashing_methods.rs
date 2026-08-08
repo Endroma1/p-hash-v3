@@ -6,7 +6,7 @@ use image_hasher::HasherConfig;
 
 use crate::processor::Hash;
 
-#[derive(Debug, serde::Deserialize, Clone, EnumIter)]
+#[derive(Debug, serde::Deserialize, serde::Serialize, Clone, EnumIter)]
 pub enum HashingMethodType {
     Mean,
 }

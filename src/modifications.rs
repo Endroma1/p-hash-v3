@@ -3,7 +3,7 @@ use std::{fmt::Display, ops::Deref, sync::Arc};
 use image::{DynamicImage, imageops::blur};
 use strum_macros::EnumIter;
 
-#[derive(Debug, serde::Deserialize, Clone, EnumIter)]
+#[derive(Debug, serde::Deserialize, serde::Serialize, Clone, EnumIter)]
 pub enum ModificationType {
     Blur,
 }
