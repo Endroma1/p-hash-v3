@@ -89,3 +89,35 @@ impl Display for Mean {
         write!(f, "mean")
     }
 }
+
+pub struct Median;
+impl HashingMethod for Median {
+    fn run(&self, image: &DynamicImage) -> Hash {
+        let hasher = HasherConfig::new()
+            .hash_alg(image_hasher::HashAlg::Median)
+            .to_hasher();
+        let hash = hasher.hash_image(image);
+        Hash::from(hash.into_inner())
+    }
+}
+impl Display for Median {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "median")
+    }
+}
+
+pub struct VertGradient;
+impl HashingMethod for VertGradient {
+    fn run(&self, image: &DynamicImage) -> Hash {
+        let hasher = HasherConfig::new()
+            .hash_alg(image_hasher::HashAlg::VertGradient)
+            .to_hasher();
+        let hash = hasher.hash_image(image);
+        Hash::from(hash.into_inner())
+    }
+}
+impl Display for VertGradient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "vert gradient")
+    }
+}

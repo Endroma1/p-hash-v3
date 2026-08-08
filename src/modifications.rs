@@ -1,6 +1,6 @@
 use std::{fmt::Display, ops::Deref, sync::Arc};
 
-use image::{DynamicImage, imageops::blur};
+use image::{DynamicImage, imageops::{blur, colorops}};
 use strum_macros::EnumIter;
 
 #[derive(Debug, serde::Deserialize, serde::Serialize, Clone, EnumIter)]
@@ -79,5 +79,30 @@ impl Modification for Blur {
 impl Display for Blur {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "blur")
+    }
+}
+pub struct Brighten;
+
+impl Modification for Brighten {
+    fn run(&self, image: &DynamicImage) -> DynamicImage {
+        colorops::brighten(image, 20).into()
+    }
+}
+impl Display for Brighten {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "brighten")
+    }
+}
+
+pub struct Contrast;
+
+impl Modification for Contrast {
+    fn run(&self, image: &DynamicImage) -> DynamicImage {
+        colorops::contrast(image, 0.5).into()
+    }
+}
+impl Display for Contrast {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "contrast")
     }
 }
