@@ -12,6 +12,7 @@ image = "0.25.10"
 image_hasher = "3.1.1"
 rayon = "1.12.0"
 reqwest = { version = "0.13.4", features = ["rustls"] }
+secrecy = "0.10.3"
 serde = { version = "1.0.229", features = ["derive"] }
 sqlx = { version = "0.9.0", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid"] }
 thiserror = "2.0.19"

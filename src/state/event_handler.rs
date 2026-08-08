@@ -25,6 +25,8 @@ pub enum Event {
 pub struct EventHandler {
     tx: tokio::sync::mpsc::Sender<Event>,
 }
+
+/// Handler for reading events from app.
 pub struct EventStream {
     stream: Box<dyn Stream<Item = Event> + Send + Sync + Unpin>,
 }

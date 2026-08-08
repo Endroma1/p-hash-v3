@@ -12,7 +12,7 @@ pub async fn run(state: State) -> Result<(), RunError> {
         .is_running
         .store(true, std::sync::atomic::Ordering::Relaxed);
 
-    let images_n = { *state.settings.images_n.lock().unwrap() };
+    let images_n = { state.settings.images_n() };
 
     let stream = Fetcher::Picsum { images_n }.execute().await.unwrap();
 
@@ -44,7 +44,6 @@ pub async fn run(state: State) -> Result<(), RunError> {
         progress_sender
             .send_fetch_progress(Progress::from(&progress))
             .await;
-        tokio::time::sleep(std::time::Duration::from_millis(200)).await;
         p
     }));
 

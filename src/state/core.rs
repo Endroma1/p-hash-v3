@@ -38,10 +38,15 @@ impl InnerState {
             is_running: AtomicBool::new(false),
             event_handler,
             settings: Settings::default(),
-            db_pool: pool
-
+            db_pool: pool,
         };
         (inner_state, event_stream)
+    }
+    pub fn is_running(&self) -> bool{
+        self.is_running.load(std::sync::atomic::Ordering::Relaxed)
+    }
+    pub fn set_is_running(&self, val: bool){
+        self.is_running.store(val, std::sync::atomic::Ordering::Relaxed);
     }
 }
 
@@ -66,7 +71,7 @@ impl StateBuilder {
             is_running: AtomicBool::new(false),
             event_handler,
             settings: self.settings,
-            db_pool: pool
+            db_pool: pool,
         };
 
         (
@@ -77,4 +82,3 @@ impl StateBuilder {
         )
     }
 }
-
