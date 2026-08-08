@@ -72,6 +72,8 @@ impl App {
             .await
             .context("Could not parse results")?;
 
+        self.is_running.store(false, std::sync::atomic::Ordering::Relaxed);
+
         Ok(())
     }
     pub fn is_running(&self) -> bool {
