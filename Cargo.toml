@@ -15,6 +15,8 @@ reqwest = { version = "0.13.4", features = ["rustls"] }
 secrecy = "0.10.3"
 serde = { version = "1.0.229", features = ["derive"] }
 sqlx = { version = "0.9.0", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid"] }
+strum = "0.28.0"
+strum_macros = "0.28.0"
 thiserror = "2.0.19"
 tokio = { version = "1.53.1", features = ["full"] }
 tokio-stream = "0.1.19"

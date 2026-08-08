@@ -1,11 +1,12 @@
 use std::{fmt::Display, ops::Deref, sync::Arc};
+use strum_macros::EnumIter;
 
 use image::DynamicImage;
 use image_hasher::HasherConfig;
 
 use crate::processor::Hash;
 
-#[derive(Debug, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Deserialize, Clone, EnumIter)]
 pub enum HashingMethodType {
     Mean,
 }
