@@ -28,8 +28,6 @@ impl App {
 
         (app, stream)
     }
-    // Runs modification and hashing
-    // Blocks until done. Relieves thread when sending results to db
     pub async fn run<S>(&self, configure: S) -> Result<(), AppError>
     where
         S: FnOnce(&mut Settings),
@@ -37,6 +35,9 @@ impl App {
         let mut settings = Settings::default();
         configure(&mut settings);
 
+        self.run_with(settings).await
+    }
+    pub async fn run_with(&self, settings: Settings) -> Result<(), AppError> {
         settings.validate().context("Failed to validate settings")?;
 
         self.is_running
@@ -86,6 +87,7 @@ impl App {
 
         Ok(())
     }
+
     pub fn is_running(&self) -> bool {
         self.is_running.load(std::sync::atomic::Ordering::Relaxed)
     }
