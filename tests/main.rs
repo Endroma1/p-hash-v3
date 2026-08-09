@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use phash::{App, HashingMethodType, ModificationType};
+use phash::{App, Fetcher, HashingMethodType, ModificationType};
 use sqlx::{AssertSqlSafe, Connection, PgConnection, PgPool, query};
 use uuid::Uuid;
 
@@ -23,12 +23,15 @@ async fn run_creates_correct_amount_of_entries_in_database() {
         images_n * hashing_methods.len() as u64 * modifications.len() as u64;
     let expected_number_of_modified_images = images_n * modifications.len() as u64;
 
+    let fetcher = Fetcher::Picsum { images_n };
+
     let (app, _stream) = App::new(pool.clone());
 
     app.run(|settings| {
         settings.images_n = 10;
         settings.hashing_methods = hashing_methods;
         settings.modifications = modifications;
+        settings.fetcher = fetcher;
     })
     .await
     .unwrap();
@@ -59,7 +62,7 @@ async fn run_creates_correct_amount_of_entries_in_database() {
         expected_number_of_modified_images as i64,
         number_of_modified_images
     );
-    assert_eq!(settings.images_n as i64, number_of_images);
+    assert_eq!(images_n as i64, number_of_images);
 }
 
 async fn setup_db() -> PgPool {

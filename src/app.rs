@@ -7,7 +7,7 @@ use tokio::task::spawn_blocking;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use crate::{
-    AtomicProgress, EventHandler, EventStream, Fetcher, HashingMethods, Modifications, Progress,
+    AtomicProgress, EventHandler, EventStream, HashingMethods, Modifications, Progress,
     Settings, create_event_bus, parse_image_rayon, parse_results,
 };
 
@@ -53,9 +53,7 @@ impl App {
         self.is_running
             .store(true, std::sync::atomic::Ordering::Relaxed);
 
-        let images_n = settings.images_n;
-
-        let stream = Fetcher::Picsum { images_n }.execute().await.unwrap();
+        let stream = settings.fetcher.execute().await.unwrap();
         let modifications = Modifications::from(&settings.modifications);
         let hashing_methods = HashingMethods::from(&settings.hashing_methods);
 

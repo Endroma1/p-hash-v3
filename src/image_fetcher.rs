@@ -14,29 +14,29 @@ use tokio_stream::wrappers::ReceiverStream;
 use crate::Image;
 
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, Clone, Debug)]
 pub enum Fetcher {
     Local { path: PathBuf },
     Picsum { images_n: u64 },
 }
 impl Fetcher {
     pub async fn execute(
-        self,
+        &self,
     ) -> Result<ReceiverStream<Result<Image, FetchError>>, FetchError> {
         match self {
-            Self::Local { path } => fetch_images_local( path).await,
-            Self::Picsum { images_n } => fetch_images_picsum( images_n).await,
+            Self::Local { path } => fetch_images_local(path).await,
+            Self::Picsum { images_n } => fetch_images_picsum( *images_n).await,
         }
     }
 }
 
 
 pub async fn fetch_images_local(
-    dir_path: PathBuf,
+    dir_path: &Path,
 ) -> Result<ReceiverStream<Result<Image, FetchError>>, FetchError> {
     let (tx, rx) = tokio::sync::mpsc::channel(10);
 
-    let mut dir = read_dir(&dir_path.clone())
+    let mut dir = read_dir(&dir_path)
         .await
         .context("Failed to read directory from input path")?;
 
