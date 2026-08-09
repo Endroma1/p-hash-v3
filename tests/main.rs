@@ -57,12 +57,18 @@ async fn run_creates_correct_amount_of_entries_in_database() {
         .count
         .unwrap();
 
-    assert_eq!(number_of_hashes as u64, expected_number_of_hashes);
     assert_eq!(
-        expected_number_of_modified_images as i64,
-        number_of_modified_images
+        images_n as i64, number_of_images,
+        "Number of images did not match expected"
     );
-    assert_eq!(images_n as i64, number_of_images);
+    assert_eq!(
+        expected_number_of_modified_images as i64, number_of_modified_images,
+        "Number of modified images did not match expected"
+    );
+    assert_eq!(
+        expected_number_of_hashes, number_of_hashes as u64,
+        "Number of hashes did not match expected"
+    );
 }
 
 async fn setup_db() -> PgPool {

@@ -10,9 +10,9 @@ use image::{DynamicImage, ImageReader};
 use reqwest::Url;
 use tokio::fs::{DirEntry, read_dir};
 use tokio_stream::wrappers::ReceiverStream;
+use uuid::Uuid;
 
 use crate::Image;
-
 
 #[derive(serde::Deserialize, Clone, Debug)]
 pub enum Fetcher {
@@ -20,16 +20,13 @@ pub enum Fetcher {
     Picsum { images_n: u64 },
 }
 impl Fetcher {
-    pub async fn execute(
-        &self,
-    ) -> Result<ReceiverStream<Result<Image, FetchError>>, FetchError> {
+    pub async fn execute(&self) -> Result<ReceiverStream<Result<Image, FetchError>>, FetchError> {
         match self {
             Self::Local { path } => fetch_images_local(path).await,
-            Self::Picsum { images_n } => fetch_images_picsum( *images_n).await,
+            Self::Picsum { images_n } => fetch_images_picsum(*images_n).await,
         }
     }
 }
-
 
 pub async fn fetch_images_local(
     dir_path: &Path,
@@ -66,10 +63,10 @@ async fn parse_entry(entry: DirEntry) -> Result<Image, FetchError> {
             .to_str()
             .map(|s| String::from(s))
             .context("Could not get file_name for entry")?;
-        let image = Image {
-            image: image,
-            name: name,
-        };
+
+        let uuid = Uuid::new_v4();
+
+        let image = Image { image, name, uuid};
         Ok(image)
     } else {
         Err(FetchError::UnexpectedError(
@@ -127,9 +124,11 @@ pub async fn fetch_picsum_image() -> Result<Image, ImageParseError> {
         .context("Could not guess format of picsum image")?
         .decode()
         .context("Could not decode picsum image")?;
+    let uuid = Uuid::new_v4();
     Ok(Image {
         image,
         name: url.to_string(),
+        uuid
     })
 }
 

@@ -17,12 +17,13 @@ pub async fn parse_results(
             .await
             .context("Could not begin transaction")?;
 
-        let image_uuid = send_image_to_db(&result.image_name, &mut transaction)
+        let image_uuid = send_image_to_db(result.image.uuid, &result.image.name, &mut transaction)
             .await
             .context("Could not send image to db")?;
 
         let modified_image_uuid = send_modified_image_to_db(
-            &result.modification.to_string(),
+            result.modification.uuid,
+            &result.modification.modification.to_string(),
             image_uuid,
             &mut transaction,
         )
@@ -49,25 +50,28 @@ pub async fn parse_results(
 
 #[tracing::instrument(name = "Sending image to db", skip(transaction))]
 pub async fn send_image_to_db(
+    id: Uuid,
     name: &str,
     transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<Uuid, sqlx::Error> {
-    let id = Uuid::new_v4();
-    let query = query!("INSERT INTO images (id, name) VALUES ($1, $2)", id, name);
+    let query = query!(
+        "INSERT INTO images (id, name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
+        id,
+        name
+    );
     transaction.execute(query).await?;
     Ok(id)
 }
 
 #[tracing::instrument(name = "Sending modified_image to db", skip(transaction))]
 pub async fn send_modified_image_to_db(
+    id: Uuid,
     modification_name: &str,
     original_image_id: Uuid,
     transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<Uuid, sqlx::Error> {
-    let id = Uuid::new_v4();
-
     let query = query!(
-        "INSERT INTO modified_images (id, modification, image_id) VALUES ($1, $2, $3)",
+        "INSERT INTO modified_images (id, modification, image_id) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING",
         id,
         modification_name,
         original_image_id
