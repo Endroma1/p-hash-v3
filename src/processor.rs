@@ -115,7 +115,6 @@ pub fn parse_image_rayon(
         .for_each(move |image| {
             let results = parse_image(image, modifications, hashing_methods);
             for result in results {
-                println!("Sending result {}", result.image.name);
                 if tx.send(result).is_err() {
                     tracing::error!("Receiver exited before all results could be sent");
                     break;
