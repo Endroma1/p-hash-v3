@@ -50,6 +50,9 @@ pub async fn fetch_images_local(
 
     Ok(ReceiverStream::new(rx))
 }
+
+
+
 async fn parse_entry(entry: DirEntry) -> Result<Image, FetchError> {
     if entry
         .file_type()

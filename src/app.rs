@@ -7,8 +7,8 @@ use tokio::task::spawn_blocking;
 use tokio_stream::wrappers::UnboundedReceiverStream;
 
 use crate::{
-    AtomicProgress, EventHandler, EventStream, HashingMethods, Modifications, Progress,
-    Settings, create_event_bus, parse_image_rayon, parse_results,
+    AtomicProgress, EventHandler, EventStream, HashingMethods, Modifications, Progress, Settings,
+    create_event_bus, parse_image_rayon, parse_results,
 };
 
 pub struct App {
@@ -30,25 +30,14 @@ impl App {
     }
     // Runs modification and hashing
     // Blocks until done. Relieves thread when sending results to db
-    pub async fn run<S>(&self, configure: S) -> Result<(), AppError> where S: FnOnce(&mut Settings){
+    pub async fn run<S>(&self, configure: S) -> Result<(), AppError>
+    where
+        S: FnOnce(&mut Settings),
+    {
         let mut settings = Settings::default();
         configure(&mut settings);
 
-        if settings.hashing_methods.len() == 0 {
-            return Err(AppError::UnexpectedError(anyhow::anyhow!(
-                "No hashing methods selected"
-            )));
-        }
-        if settings.modifications.len() == 0 {
-            return Err(AppError::UnexpectedError(anyhow::anyhow!(
-                "No modifications selected"
-            )));
-        }
-        if settings.images_n <= 0 {
-            return Err(AppError::UnexpectedError(anyhow::anyhow!(
-                "Number of images needs to be more than zero"
-            )));
-        }
+        settings.validate().context("Failed to validate settings")?;
 
         self.is_running
             .store(true, std::sync::atomic::Ordering::Relaxed);
@@ -80,9 +69,11 @@ impl App {
 
         let results = Box::pin(results.then(async |p| {
             let _ = &progress.increment_check();
-            progress_sender
-                .send_fetch_progress(Progress::from(&progress))
-                .await;
+            if settings.send_events {
+                progress_sender
+                    .send_fetch_progress(Progress::from(&progress))
+                    .await;
+            }
             p
         }));
 

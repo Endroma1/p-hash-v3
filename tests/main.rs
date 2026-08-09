@@ -28,10 +28,11 @@ async fn run_creates_correct_amount_of_entries_in_database() {
     let (app, _stream) = App::new(pool.clone());
 
     app.run(|settings| {
-        settings.images_n = 10;
-        settings.hashing_methods = hashing_methods;
-        settings.modifications = modifications;
-        settings.fetcher = fetcher;
+        settings
+            .disable_event_loop()
+            .fetcher(fetcher)
+            .hashing_methods(hashing_methods)
+            .modifications(modifications);
     })
     .await
     .unwrap();
