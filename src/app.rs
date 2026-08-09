@@ -30,7 +30,10 @@ impl App {
     }
     // Runs modification and hashing
     // Blocks until done. Relieves thread when sending results to db
-    pub async fn run(&self, settings: &Settings) -> Result<(), AppError> {
+    pub async fn run<S>(&self, configure: S) -> Result<(), AppError> where S: FnOnce(&mut Settings){
+        let mut settings = Settings::default();
+        configure(&mut settings);
+
         if settings.hashing_methods.len() == 0 {
             return Err(AppError::UnexpectedError(anyhow::anyhow!(
                 "No hashing methods selected"

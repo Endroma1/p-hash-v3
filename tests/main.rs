@@ -1,29 +1,65 @@
-use phash::{App, HashingMethodType, ModificationType, Settings};
+use std::sync::LazyLock;
+
+use phash::{App, HashingMethodType, ModificationType};
 use sqlx::{AssertSqlSafe, Connection, PgConnection, PgPool, query};
 use uuid::Uuid;
 
+static LOGGER: LazyLock<()> = LazyLock::new(|| {
+    tracing_subscriber::fmt::init();
+});
+
 #[tokio::test]
 async fn run_creates_correct_amount_of_entries_in_database() {
+    LazyLock::force(&LOGGER);
+
+    tracing::debug!("Settings up db");
     let pool = setup_db().await;
 
-    let mut settings = Settings::default();
-    settings.images_n = 10;
-    settings.hashing_methods = vec![HashingMethodType::Mean];
-    settings.modifications = vec![ModificationType::Blur];
+    let images_n = 10;
+    let hashing_methods = vec![HashingMethodType::Mean, HashingMethodType::Median];
+    let modifications = vec![ModificationType::Blur, ModificationType::Contrast];
 
-    let expected_number_of_results = settings.expected_number_of_results();
+    let expected_number_of_hashes =
+        images_n * hashing_methods.len() as u64 * modifications.len() as u64;
+    let expected_number_of_modified_images = images_n * modifications.len() as u64;
 
     let (app, _stream) = App::new(pool.clone());
-    app.run(&settings).await.unwrap();
 
-    let number_of_results: i64 = query!("SELECT COUNT(id) FROM hashes;")
+    app.run(|settings| {
+        settings.images_n = 10;
+        settings.hashing_methods = hashing_methods;
+        settings.modifications = modifications;
+    })
+    .await
+    .unwrap();
+
+    tracing::debug!("Fetching results from db");
+    let number_of_hashes: i64 = query!("SELECT COUNT(id) FROM hashes;")
         .fetch_one(&pool)
         .await
         .unwrap()
         .count
         .unwrap();
 
-    assert_eq!(number_of_results as u64, expected_number_of_results);
+    let number_of_modified_images: i64 = query!("SELECT COUNT(id) FROM modified_images;")
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+        .count
+        .unwrap();
+    let number_of_images: i64 = query!("SELECT COUNT(id) FROM images;")
+        .fetch_one(&pool)
+        .await
+        .unwrap()
+        .count
+        .unwrap();
+
+    assert_eq!(number_of_hashes as u64, expected_number_of_hashes);
+    assert_eq!(
+        expected_number_of_modified_images as i64,
+        number_of_modified_images
+    );
+    assert_eq!(settings.images_n as i64, number_of_images);
 }
 
 async fn setup_db() -> PgPool {
