@@ -44,6 +44,8 @@ impl DerefMut for EventStream {
 
 impl EventHandler {
     pub async fn send_fetch_progress(&self, progress: Progress) {
-        self.tx.send(Event::FetchProgress { progress }).await.unwrap();
+        if let Err(_) = self.tx.try_send(Event::FetchProgress { progress }) {
+            tracing::warn!("Dropped sending progress {:?}. Channel is full", progress);
+        };
     }
 }

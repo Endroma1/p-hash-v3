@@ -68,6 +68,7 @@ impl App {
                     break;
                 };
             }
+            tracing::debug!("Finished parsing images");
         });
 
         let results = UnboundedReceiverStream::new(rx);

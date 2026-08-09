@@ -43,6 +43,7 @@ pub async fn parse_results(
             .await
             .context("Could not commit transaction")?;
     }
+    tracing::debug!("Result parser exiting");
     Ok(())
 }
 

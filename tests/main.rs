@@ -8,7 +8,7 @@ static LOGGER: LazyLock<()> = LazyLock::new(|| {
     tracing_subscriber::fmt::init();
 });
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn run_creates_correct_amount_of_entries_in_database() {
     LazyLock::force(&LOGGER);
 
