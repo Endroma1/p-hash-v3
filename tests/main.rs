@@ -1,14 +1,16 @@
-use std::sync::LazyLock;
+use std::{path::Path, sync::LazyLock};
 
-use phash::{App, Fetcher, HashingMethodType, ModificationType};
+use claim::assert_some;
+use phash::{App, Fetcher, HashingMethodType, ModificationType, fetch_picsum_image};
 use sqlx::{AssertSqlSafe, Connection, PgConnection, PgPool, query};
+use tempdir::TempDir;
 use uuid::Uuid;
 
 static LOGGER: LazyLock<()> = LazyLock::new(|| {
     tracing_subscriber::fmt::init();
 });
 
-#[tokio::test(flavor = "multi_thread")]
+#[tokio::test]
 async fn run_creates_correct_amount_of_entries_in_database() {
     LazyLock::force(&LOGGER);
 
@@ -70,6 +72,60 @@ async fn run_creates_correct_amount_of_entries_in_database() {
         expected_number_of_hashes, number_of_hashes as u64,
         "Number of hashes did not match expected"
     );
+}
+
+#[tokio::test]
+async fn test_local_image_fetching_works() {
+    let image = fetch_picsum_image()
+        .await
+        .expect("Could not fetch picsum images");
+
+    let tempdir = TempDir::new("images").unwrap();
+
+    let id = {
+        let id = Uuid::new_v4();
+        let save_path = tempdir.path().join(Path::new(&id.to_string()));
+
+        image
+            .image
+            .save(save_path)
+            .expect("Could not save test image to tempdir");
+        id
+    };
+    LazyLock::force(&LOGGER);
+
+    tracing::debug!("Settings up db");
+    let pool = setup_db().await;
+
+    let hashing_methods = vec![HashingMethodType::Mean, HashingMethodType::Median];
+    let modifications = vec![ModificationType::Blur, ModificationType::Contrast];
+
+    let fetcher = Fetcher::Local {
+        path: tempdir.path().to_path_buf(),
+    };
+
+    let (app, _stream) = App::new(pool.clone());
+
+    app.run(|settings| {
+        settings
+            .disable_event_loop()
+            .fetcher(fetcher)
+            .hashing_methods(hashing_methods)
+            .modifications(modifications);
+    })
+    .await
+    .unwrap();
+
+    let result = sqlx::query!(
+        "SELECT count(id) FROM images WHERE name = $1",
+        id.to_string()
+    )
+    .fetch_one(&pool)
+    .await
+    .expect("Could not execute query")
+    .count;
+
+    assert_some!(result);
 }
 
 async fn setup_db() -> PgPool {

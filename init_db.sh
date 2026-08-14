@@ -1,6 +1,10 @@
 #!/bin/bash
 
 set -eo pipefail
+sqlx --version || {
+    echo "sqlx not found - Install with 'cargo install sqlx'"
+    exit 1
+}
 
 DB_PORT="${DB_PORT:=5432}"
 SUPERUSER="${SUPERUSER:=postgres}"
@@ -16,29 +20,25 @@ if [[ -z "${SKIP_DOCKER}" ]]; then
         --env POSTGRES_PASSWORD="${SUPERUSER_PWD}" \
         --health-cmd="pg_isready -U ${SUPERUSER} || exit 1" \
         --health-interval=1s \
-        --health-timeout=5s\
-        --health-retries=5\
-        --publish "${DB_PORT}":5432 \
-        --detach\
-        postgres
+        --health-timeout=5s --health-retries=5 --publish "${DB_PORT}":5432 \
+        --detach postgres
 
-until [ \
-    "$(podman inspect -f "{{.State.Health.Status}}" ${CONTAINER_NAME})" == \
-    "healthy" \
-    ]; do
->&2 echo "Postgres still unavailable - Sleeping"
-sleep 1
-done
+    until [ \
+        "$(podman inspect -f "{{.State.Health.Status}}" ${CONTAINER_NAME})" == \
+        "healthy" \
+        ]; do
+        >&2 echo "Postgres still unavailable - Sleeping"
+        sleep 1
+    done
 
-CREATE_QUERY="CREATE USER ${APP_USER_NAME} WITH PASSWORD '${APP_USER_PWD}';"
-podman exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${CREATE_QUERY}"
+    CREATE_QUERY="CREATE USER ${APP_USER_NAME} WITH PASSWORD '${APP_USER_PWD}';"
+    podman exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${CREATE_QUERY}"
 
-GRANT_QUERY="ALTER USER ${APP_USER_NAME} CREATEDB;"
-podman exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${GRANT_QUERY}"
+    GRANT_QUERY="ALTER USER ${APP_USER_NAME} CREATEDB;"
+    podman exec -it "${CONTAINER_NAME}" psql -U "${SUPERUSER}" -c "${GRANT_QUERY}"
 
->&2 echo "Postgres is up and running on port ${DB_PORT}"
+    >&2 echo "Postgres is up and running on port ${DB_PORT}"
 fi
-
 
 DATABASE_URL=postgres://${APP_USER_NAME}:${APP_USER_PWD}@localhost:${DB_PORT}/${APP_DB_NAME}
 export DATABASE_URL

@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.104"
 atomic_enum = "0.3.0"
+claim = "0.5.0"
 fake = "5.1.0"
 futures = { version = "0.3.33", features = ["executor"] }
 image = "0.25.10"
@@ -17,6 +18,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 sqlx = { version = "0.9.0", features = ["runtime-tokio", "tls-rustls", "postgres", "uuid"] }
 strum = "0.28.0"
 strum_macros = "0.28.0"
+tempdir = "0.3.7"
 thiserror = "2.0.19"
 tokio = { version = "1.53.1", features = ["full"] }
 tokio-stream = "0.1.19"
