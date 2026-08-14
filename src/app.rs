@@ -2,9 +2,10 @@ use std::sync::atomic::AtomicBool;
 
 use anyhow::Context;
 use futures::{StreamExt, executor::block_on_stream};
-use sqlx::{PgPool, query};
+use sqlx::{PgPool, query, types::chrono::Utc};
 use tokio::task::spawn_blocking;
 use tokio_stream::wrappers::UnboundedReceiverStream;
+use uuid::Uuid;
 
 use crate::{
     AtomicProgress, EventHandler, EventStream, HashingMethods, Modifications, Progress, Settings,
@@ -43,6 +44,10 @@ impl App {
         self.is_running
             .store(true, std::sync::atomic::Ordering::Relaxed);
 
+        let run_id = create_run(&self.db_pool, "")
+            .await
+            .context("Could not create new run")?;
+
         let stream = settings.fetcher.execute().await.unwrap();
         let modifications = Modifications::from(&settings.modifications);
         let hashing_methods = HashingMethods::from(&settings.hashing_methods);
@@ -78,7 +83,7 @@ impl App {
             p
         }));
 
-        parse_results(results, &self.db_pool)
+        parse_results(results, run_id, &self.db_pool )
             .await
             .context("Could not parse results")?;
 
@@ -122,6 +127,21 @@ impl App {
             running,
         })
     }
+}
+
+pub async fn create_run(db_pool: &PgPool, name: &str) -> Result<Uuid, AppError> {
+    let id = Uuid::new_v4();
+    let timestamp = Utc::now();
+    sqlx::query!(
+        "INSERT INTO runs (id, run_time, name) VALUES ($1, $2, $3)",
+        id,
+        timestamp,
+        name
+    )
+    .execute(db_pool)
+    .await
+    .context("Could not insert new run in database")?;
+    Ok(id)
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]

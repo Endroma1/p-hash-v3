@@ -1,7 +1,7 @@
 use std::{path::Path, sync::LazyLock};
 
 use claim::assert_some;
-use phash::{App, Fetcher, HashingMethodType, ModificationType, fetch_picsum_image};
+use phash::{App, Fetcher, HashingMethodType, ModificationType, Settings, fetch_picsum_image};
 use sqlx::{AssertSqlSafe, Connection, PgConnection, PgPool, query};
 use tempdir::TempDir;
 use uuid::Uuid;
@@ -12,49 +12,35 @@ static LOGGER: LazyLock<()> = LazyLock::new(|| {
 
 #[tokio::test]
 async fn run_creates_correct_amount_of_entries_in_database() {
-    LazyLock::force(&LOGGER);
-
-    tracing::debug!("Settings up db");
-    let pool = setup_db().await;
-
     let images_n = 10;
-    let hashing_methods = vec![HashingMethodType::Mean, HashingMethodType::Median];
-    let modifications = vec![ModificationType::Blur, ModificationType::Contrast];
 
-    let expected_number_of_hashes =
-        images_n * hashing_methods.len() as u64 * modifications.len() as u64;
-    let expected_number_of_modified_images = images_n * modifications.len() as u64;
+    let test_app = setup(Fetcher::Picsum { images_n: 10 }).await;
 
-    let fetcher = Fetcher::Picsum { images_n };
+    let expected_number_of_hashes = images_n
+        * test_app.settings.hashing_methods.len() as u64
+        * test_app.settings.modifications.len() as u64;
+    let expected_number_of_modified_images =
+        images_n * test_app.settings.modifications.len() as u64;
 
-    let (app, _stream) = App::new(pool.clone());
-
-    app.run(|settings| {
-        settings
-            .disable_event_loop()
-            .fetcher(fetcher)
-            .hashing_methods(hashing_methods)
-            .modifications(modifications);
-    })
-    .await
-    .unwrap();
+    let (app, _stream) = App::new(test_app.pool.clone());
+    app.run_with(test_app.settings).await.unwrap();
 
     tracing::debug!("Fetching results from db");
     let number_of_hashes: i64 = query!("SELECT COUNT(id) FROM hashes;")
-        .fetch_one(&pool)
+        .fetch_one(&test_app.pool)
         .await
         .unwrap()
         .count
         .unwrap();
 
     let number_of_modified_images: i64 = query!("SELECT COUNT(id) FROM modified_images;")
-        .fetch_one(&pool)
+        .fetch_one(&test_app.pool)
         .await
         .unwrap()
         .count
         .unwrap();
     let number_of_images: i64 = query!("SELECT COUNT(id) FROM images;")
-        .fetch_one(&pool)
+        .fetch_one(&test_app.pool)
         .await
         .unwrap()
         .count
@@ -84,7 +70,9 @@ async fn test_local_image_fetching_works() {
 
     let id = {
         let id = Uuid::new_v4();
-        let save_path = tempdir.path().join(Path::new(&id.to_string()));
+        let save_path = tempdir
+            .path()
+            .join(Path::new(&format!("{}.{}", &id.to_string(), "png")));
 
         image
             .image
@@ -95,26 +83,15 @@ async fn test_local_image_fetching_works() {
     LazyLock::force(&LOGGER);
 
     tracing::debug!("Settings up db");
-    let pool = setup_db().await;
-
-    let hashing_methods = vec![HashingMethodType::Mean, HashingMethodType::Median];
-    let modifications = vec![ModificationType::Blur, ModificationType::Contrast];
 
     let fetcher = Fetcher::Local {
         path: tempdir.path().to_path_buf(),
     };
+    let TestApp { pool, settings } = setup(fetcher).await;
 
     let (app, _stream) = App::new(pool.clone());
 
-    app.run(|settings| {
-        settings
-            .disable_event_loop()
-            .fetcher(fetcher)
-            .hashing_methods(hashing_methods)
-            .modifications(modifications);
-    })
-    .await
-    .unwrap();
+    app.run_with(settings).await.unwrap();
 
     let result = sqlx::query!(
         "SELECT count(id) FROM images WHERE name = $1",
@@ -126,6 +103,30 @@ async fn test_local_image_fetching_works() {
     .count;
 
     assert_some!(result);
+}
+
+struct TestApp {
+    pub pool: PgPool,
+    pub settings: Settings,
+}
+
+async fn setup(fetcher: Fetcher) -> TestApp {
+    LazyLock::force(&LOGGER);
+
+    tracing::debug!("Settings up db");
+    let pool = setup_db().await;
+
+    let hashing_methods = vec![HashingMethodType::Mean, HashingMethodType::Median];
+    let modifications = vec![ModificationType::Blur, ModificationType::Contrast];
+
+    let mut settings = Settings::default();
+    settings
+        .disable_event_loop()
+        .fetcher(fetcher)
+        .hashing_methods(hashing_methods)
+        .modifications(modifications);
+
+    TestApp { pool, settings }
 }
 
 async fn setup_db() -> PgPool {

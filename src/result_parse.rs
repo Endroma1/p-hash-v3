@@ -9,6 +9,7 @@ use crate::processor::{self, Hash};
 #[tracing::instrument(name = "Parsing results into db", skip(results, db_pool))]
 pub async fn parse_results(
     mut results: impl Stream<Item = processor::ParseResult> + Unpin,
+    run_id: Uuid,
     db_pool: &PgPool,
 ) -> Result<(), ResultParseError> {
     while let Some(result) = results.next().await {
@@ -17,7 +18,7 @@ pub async fn parse_results(
             .await
             .context("Could not begin transaction")?;
 
-        let image_uuid = send_image_to_db(result.image.uuid, &result.image.name, &mut transaction)
+        let image_uuid = send_image_to_db(run_id, result.image.uuid, &result.image.name, &mut transaction)
             .await
             .context("Could not send image to db")?;
 
@@ -50,14 +51,16 @@ pub async fn parse_results(
 
 #[tracing::instrument(name = "Sending image to db", skip(transaction))]
 pub async fn send_image_to_db(
+    run_id: Uuid,
     id: Uuid,
     name: &str,
     transaction: &mut Transaction<'_, Postgres>,
 ) -> Result<Uuid, sqlx::Error> {
     let query = query!(
-        "INSERT INTO images (id, name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING",
+        "INSERT INTO images (id, name, run_id) VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING",
         id,
-        name
+        name,
+        run_id,
     );
     transaction.execute(query).await?;
     Ok(id)
