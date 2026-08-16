@@ -2,6 +2,7 @@ use std::fs::read_dir;
 
 use secrecy::{ExposeSecret, SecretString};
 use sqlx::postgres::PgConnectOptions;
+use uuid::Uuid;
 
 use crate::{Fetcher, HashingMethodType, ModificationType};
 
@@ -11,6 +12,7 @@ pub struct Settings {
     pub modifications: Vec<ModificationType>,
     pub fetcher: Fetcher,
     pub send_events: bool,
+    pub run_name: String,
 }
 impl Settings {
     pub fn disable_event_loop(&mut self) -> &mut Self {
@@ -27,6 +29,10 @@ impl Settings {
     }
     pub fn modifications(&mut self, methods: Vec<ModificationType>) -> &mut Self {
         self.modifications = methods;
+        self
+    }
+    pub fn run_name(&mut self, name: String) -> &mut Self {
+        self.run_name = name;
         self
     }
     pub fn validate(&self) -> Result<(), ValidationError> {
@@ -68,6 +74,7 @@ impl Default for Settings {
             modifications: vec![ModificationType::Blur],
             fetcher: Fetcher::Picsum { images_n: 10 },
             send_events: true,
+            run_name: Uuid::new_v4().into(),
         }
     }
 }

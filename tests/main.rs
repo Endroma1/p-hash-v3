@@ -105,6 +105,27 @@ async fn test_local_image_fetching_works() {
     assert_some!(result);
 }
 
+#[tokio::test]
+async fn running_creates_new_run_in_db() {
+    let TestApp { pool, settings } = setup(Fetcher::Picsum { images_n: 1 }).await;
+
+    let (app, _stream) = App::new(pool.clone());
+
+    let run_name= settings.run_name.clone();
+
+    app.run_with(settings).await.unwrap();
+
+    let result = sqlx::query!(
+        "SELECT COUNT(id) FROM runs WHERE name = $1",
+        run_name
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+
+    assert_some!(result.count);
+}
+
 struct TestApp {
     pub pool: PgPool,
     pub settings: Settings,
@@ -120,11 +141,14 @@ async fn setup(fetcher: Fetcher) -> TestApp {
     let modifications = vec![ModificationType::Blur, ModificationType::Contrast];
 
     let mut settings = Settings::default();
+    let run_name = Uuid::new_v4();
+
     settings
         .disable_event_loop()
         .fetcher(fetcher)
         .hashing_methods(hashing_methods)
-        .modifications(modifications);
+        .modifications(modifications)
+        .run_name(run_name.into());
 
     TestApp { pool, settings }
 }

@@ -44,7 +44,7 @@ impl App {
         self.is_running
             .store(true, std::sync::atomic::Ordering::Relaxed);
 
-        let run_id = create_run(&self.db_pool, "")
+        let run_id = create_run(&self.db_pool, &settings.run_name)
             .await
             .context("Could not create new run")?;
 
@@ -83,7 +83,7 @@ impl App {
             p
         }));
 
-        parse_results(results, run_id, &self.db_pool )
+        parse_results(results, run_id, &self.db_pool)
             .await
             .context("Could not parse results")?;
 
